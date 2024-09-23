@@ -1,0 +1,22 @@
+{
+  "name": "project-s-api",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --hot index.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/simple-oauth2": "^5.0.7",
+    "hono": "^4.5.11",
+    "json-sql-builder2": "^1.0.24",
+    "jsonwebtoken": "^9.0.2",
+    "simple-oauth2": "^5.1.0"
+  }
+}
