@@ -8,10 +8,6 @@ const clientID = process.env.KAKAO_ID!;
 const clientSecret = process.env.KAKAO_SECRET!; // 카카오 보안 설정 시 필수
 const redirectUri = process.env.KAKAO_CALLBACK!; // 콜백 URL
 
-console.log('clientID:', clientID);
-console.log('clientSecret:', clientSecret);
-console.log('redirectUri:', redirectUri);
-
 // 카카오 OAuth 설정
 const kakaoOAuth = new AuthorizationCode({
   client: {

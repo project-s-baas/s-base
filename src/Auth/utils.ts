@@ -1,4 +1,3 @@
-import { use } from 'hono/jsx';
 import jwt from 'jsonwebtoken';
 
 const jwtSecret = process.env.JWT_SECRET!; // JWT 비밀 키 (환경 변수로 설정)

@@ -13,10 +13,12 @@
   },
   "dependencies": {
     "@types/jsonwebtoken": "^9.0.7",
+    "@types/pg": "^8.11.10",
     "@types/simple-oauth2": "^5.0.7",
     "hono": "^4.5.11",
     "json-sql-builder2": "^1.0.24",
     "jsonwebtoken": "^9.0.2",
+    "pg": "^8.13.0",
     "simple-oauth2": "^5.1.0"
   }
 }

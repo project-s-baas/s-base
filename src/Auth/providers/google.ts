@@ -8,10 +8,6 @@ const clientID = process.env.GOOGLE_ID!;
 const clientSecret = process.env.GOOGLE_SECRET!;
 const redirectUri = process.env.GOOGLE_CALLBACK!; // 콜백 URL
 
-console.log('clientID:', clientID);
-console.log('clientSecret:', clientSecret);
-console.log('redirectUri:', redirectUri);
-
 // Google OAuth 설정
 const googleOAuth = new AuthorizationCode({
   client: {
