@@ -1,12 +1,14 @@
 import { Hono } from 'hono';
 import { AuthorizationCode } from 'simple-oauth2';
 import { HTTPException } from 'hono/http-exception';
-import { generateJwtToken } from '../utils';
+import { findOrCreateUser, generateJwtToken } from '../utils';
+// @ts-ignore
+import SQLBuilder from 'json-sql-builder2';
 
 // GitHub OAuth 설정
 const clientID = process.env.GITHUB_ID!;
 const clientSecret = process.env.GITHUB_SECRET!;
-const redirectUri = process.env.GITHUB_CALLBACK!; // 콜백 URL
+const redirectUri = process.env.GITHUB_CALLBACK!;
 
 // GitHub OAuth 설정
 const githubOAuth = new AuthorizationCode({
@@ -57,7 +59,7 @@ github.get('/callback', async (c) => {
     });
 
     if (!userResponse.ok) {
-      throw new HTTPException(401, {
+      throw new HTTPException(500, {
         message: 'Failed to fetch user information',
       });
     }
@@ -65,17 +67,14 @@ github.get('/callback', async (c) => {
     const userInfo = await userResponse.json();
 
     // GitHub API에서 이메일 정보 가져오기 (fetch 사용)
-    const emailResponse = await fetch(
-      'https://api.github.com/user/emails',
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
+    const emailResponse = await fetch('https://api.github.com/user/emails', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
 
     if (!emailResponse.ok) {
-      throw new HTTPException(401, {
+      throw new HTTPException(500, {
         message: 'Failed to fetch user emails',
       });
     }
@@ -83,27 +82,35 @@ github.get('/callback', async (c) => {
     const emailInfo = await emailResponse.json();
 
     // primary: true 인 이메일만 필터링
-    const primaryEmail = emailInfo.find(
-      (email: any) => email.primary === true
-    );
+    const primaryEmail = emailInfo.find((email: any) => email.primary === true);
 
     if (!primaryEmail) {
-      throw new HTTPException(401, { message: 'No primary email found' });
+      throw new HTTPException(404, { message: 'No primary email found' });
     }
 
-    const user = {
+    const userData = {
       email: primaryEmail.email,
-      username: userInfo.login,
-      avatar: userInfo.avatar_url,
+      username: userInfo.login || null,
+      avatar: userInfo.avatar_url || null,
+      provider: 'github',
     };
+
+    const userResult = await findOrCreateUser(userData);
+
+    if (userResult.provider !== 'github') {
+      throw new HTTPException(409, {
+        message: 'This email is already registered with another provider.',
+      });
+    }
 
     // 자체 서버 토큰 발급
     let token = '';
+
     try {
-      token = generateJwtToken('유저아이디 todo');
+      token = generateJwtToken(userResult.id, userResult.role);
     } catch (error: any) {
       console.error('토큰 발급 실패:', error.message);
-      throw new HTTPException(401, {
+      throw new HTTPException(500, {
         message: 'Error occurred during token retrieval',
       });
     }
@@ -116,8 +123,8 @@ github.get('/callback', async (c) => {
       '토큰 발급 실패 또는 사용자 정보 가져오기 실패:',
       error.message
     );
-    throw new HTTPException(401, {
-      message: 'Error occurred during token retrieval or user info request',
+    throw new HTTPException(error.status, {
+      message: error.message,
     });
   }
 });

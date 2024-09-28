@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { AuthorizationCode } from 'simple-oauth2';
 import { HTTPException } from 'hono/http-exception';
-import { generateJwtToken } from '../utils';
+import { findOrCreateUser, generateJwtToken } from '../utils';
 
 // 카카오 OAuth 설정
 const clientID = process.env.KAKAO_ID!;
@@ -54,8 +54,6 @@ kakao.get('/callback', async (c) => {
     const accessTokenResponse = await kakaoOAuth.getToken(tokenParams);
     const accessToken = accessTokenResponse.token.access_token;
 
-    console.log('Access Token:', accessToken);
-
     // 카카오 API에서 유저 정보 가져오기 (fetch 사용)
     const userResponse = await fetch('https://kapi.kakao.com/v2/user/me', {
       headers: {
@@ -65,43 +63,49 @@ kakao.get('/callback', async (c) => {
     });
 
     if (!userResponse.ok) {
-      throw new HTTPException(401, {
+      throw new HTTPException(500, {
         message: 'Failed to fetch user information',
       });
     }
 
     const userInfo = await userResponse.json();
 
-    const user = {
+    const userData = {
       email: userInfo.kakao_account.email,
-      username: userInfo.properties.nickname, // 카카오에서 제공되는 유저명
-      avatar: userInfo.properties.profile_image, // 프로필 사진 URL
+      username: userInfo.properties.nickname || null,
+      avatar: userInfo.properties.profile_image || null,
+      provider: 'kakao',
     };
 
-    console.log('User Info:', user);
+    const userResult = await findOrCreateUser(userData);
+
+    if (userResult.provider !== 'kakao') {
+      throw new HTTPException(409, {
+        message: 'This email is already registered with another provider.',
+      });
+    }
 
     // 자체 서버 토큰 발급
     let token = '';
     try {
-      token = generateJwtToken('유저아이디 todo');
+      token = generateJwtToken(userResult.id, userResult.role);
     } catch (error: any) {
       console.error('토큰 발급 실패:', error.message);
-      throw new HTTPException(401, {
+      throw new HTTPException(500, {
         message: 'Error occurred during token retrieval',
       });
     }
 
     return c.json({
       token: token,
-      user: user, // 사용자 정보도 함께 반환
     });
   } catch (error: any) {
     console.error(
       '토큰 발급 실패 또는 사용자 정보 가져오기 실패:',
       error.message
     );
-    throw new HTTPException(401, {
-      message: 'Error occurred during token retrieval or user info request',
+    throw new HTTPException(error.status, {
+      message: error.message,
     });
   }
 });
