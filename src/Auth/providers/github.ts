@@ -2,8 +2,6 @@ import { Hono } from 'hono';
 import { AuthorizationCode } from 'simple-oauth2';
 import { HTTPException } from 'hono/http-exception';
 import { findOrCreateUser, generateJwtToken } from '../utils';
-// @ts-ignore
-import SQLBuilder from 'json-sql-builder2';
 
 // GitHub OAuth 설정
 const clientID = process.env.GITHUB_ID!;
