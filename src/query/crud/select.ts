@@ -13,7 +13,7 @@ import ConfigLoader from '../config';
 const select = new Hono();
 const sql = new SQLBuilder('PostgreSQL');
 const configLoader = new ConfigLoader(db);
-const config = await configLoader.getConfig();
+const tables = await configLoader.getTables();
 
 // POST 요청을 처리하고, 동적으로 JSON 쿼리를 받아 SQL로 변환 후 실행
 select.post('/', async (c) => {
@@ -31,7 +31,7 @@ select.post('/', async (c) => {
     // $columns 안에 "*": true 가 존재하는 경우에는 모든 컬럼을 가져오는 것으로 간주
     if (jsonQuery.$columns['*']) {
       const mapping = extractColumnMapping(
-        config.database,
+        tables,
         jsonQuery.$from,
         jsonQuery.$join
       );
@@ -48,7 +48,13 @@ select.post('/', async (c) => {
 
     const res = await db.query(query.sql, query.values);
 
-    const data = mapRowsToObjects(res.rows);
+    let data;
+
+    if (jsonQuery.$join) {
+      data = mapRowsToObjects(res.rows);
+    } else {
+      data = res.rows;
+    }
 
     // 결과 반환
     return c.json({ success: true, data: data });

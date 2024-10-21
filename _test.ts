@@ -106,3 +106,24 @@ const q6 = sql.$select({
 });
 
 console.log(q6);
+
+// $sql : {} 로 해서 $sql 이 붙은 문은 서버에서 한 번 미리 다 찾아서 sql 문으로 변환해주자.
+// where 안의 $sql 은 $and 를 붙인다던지
+// 그 외는 그에 맞게 __: 를 붙인다던지 등등 처리를 하자.
+
+const q7 = sql.build({
+  $select: {
+    $columns: {
+      '*': true,
+      st: {
+        __: 'ST_Distance(ST_MakePoint(2.2945, 48.8584)::geography,ST_MakePoint(-74.0445, 40.6892)::geography)',
+      },
+    },
+    $from: 'embeddings',
+    $where: {
+      $and: ["embedding <-> '[1,2,3]' > 5"],
+    },
+  },
+});
+
+console.log(q7.sql);
